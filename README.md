@@ -39,6 +39,3 @@ Step 2: Start the Frontend Application
     
     The application will be accessible in your browser, typically at http://localhost:5173.
 
-
-Frontend
-cd frontend && npm install && npm run dev # runs at http://localhost:5173
