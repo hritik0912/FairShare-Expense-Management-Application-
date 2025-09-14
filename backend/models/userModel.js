@@ -15,6 +15,12 @@ const userSchema = mongoose.Schema({
     type: String,
     required: true,
   },
+  // --- THIS FIELD IS NEW ---
+  upiId: {
+    type: String,
+    trim: true, // Automatically removes whitespace
+    default: '',
+  },
 }, {
   timestamps: true,
 });

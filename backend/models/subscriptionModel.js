@@ -10,18 +10,16 @@ const subscriptionSchema = mongoose.Schema(
       type: Number,
       required: true,
     },
-    group: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Group',
-      required: true,
-    },
-    // The user responsible for paying the bill each cycle
-    paidBy: {
+    owner: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
     },
-    // e.g., 'monthly', 'yearly'
+    group: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Group',
+      required: false, // No longer required
+    },
     billingCycle: {
       type: String,
       required: true,

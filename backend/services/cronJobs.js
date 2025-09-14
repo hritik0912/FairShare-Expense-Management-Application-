@@ -18,43 +18,44 @@ const calculateNextDueDate = (currentDueDate, cycle) => {
     return date;
 };
 
-// This cron job is scheduled to run once every day at midnight
+// --- THIS WRAPPER IS THE FIX ---
+// We are re-adding the export for the function that index.js calls.
 export const startSubscriptionProcessor = () => {
     cron.schedule('0 0 * * *', async () => {
         console.log('Running subscription processor cron job...');
         const today = new Date();
-        today.setHours(0, 0, 0, 0); // Set to the beginning of the day
+        today.setHours(0, 0, 0, 0);
 
         try {
-            // Find all subscriptions that are due today or are overdue
             const dueSubscriptions = await Subscription.find({ nextDueDate: { $lte: today } });
 
             for (const sub of dueSubscriptions) {
-                const group = await Group.findById(sub.group);
-                if (!group) continue;
+                // Only create an expense if the subscription is linked to a group
+                if (sub.group) {
+                    const group = await Group.findById(sub.group);
+                    if (!group) continue;
 
-                // Create an equal split for the new expense
-                const amountPerMember = (sub.amount / group.members.length).toFixed(2);
-                const splits = group.members.map(memberId => ({
-                    user: memberId,
-                    amount: amountPerMember,
-                }));
+                    const amountPerMember = (sub.amount / group.members.length).toFixed(2);
+                    const splits = group.members.map(memberId => ({
+                        user: memberId,
+                        amount: amountPerMember,
+                    }));
+                    
+                    await Expense.create({
+                        description: `Subscription: ${sub.name}`,
+                        amount: sub.amount,
+                        group: sub.group,
+                        paidBy: sub.owner,
+                        splitType: 'equal',
+                        splits: splits,
+                    });
+                    
+                    console.log(`Processed subscription expense for: ${sub.name}`);
+                }
 
-                // Create the new expense
-                await Expense.create({
-                    description: `Recurring: ${sub.name}`,
-                    amount: sub.amount,
-                    group: sub.group,
-                    paidBy: sub.paidBy,
-                    splitType: 'equal',
-                    splits: splits,
-                });
-
-                // Update the subscription with the next due date
+                // Always update the next due date for every subscription
                 sub.nextDueDate = calculateNextDueDate(sub.nextDueDate, sub.billingCycle);
                 await sub.save();
-                
-                console.log(`Processed subscription: ${sub.name}`);
             }
         } catch (error) {
             console.error('Error processing subscriptions:', error);
